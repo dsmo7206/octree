@@ -69,9 +69,15 @@ inline std::string to_binary(T location_code)
     return std::bitset<8*sizeof(T)>(location_code).to_string();
 }
 
-Octree::Octree(bool full)
+Octree::Octree(bool full, size_t capacity)
 {
     full ? set_root() : clear_root();
+    reserve(capacity);
+}
+
+void Octree::reserve(size_t capacity)
+{
+    _nodes.reserve(capacity);
 }
 
 void Octree::set_root()

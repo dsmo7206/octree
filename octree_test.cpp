@@ -1,3 +1,5 @@
+#include <chrono>
+#include <immintrin.h>
 #include <iostream>
 #include <vector>
 
@@ -19,6 +21,39 @@ NodeType make_node(const std::vector<int>& children_set, const std::vector<int>&
 
     return result;
 }
+
+uint32_t make_locator(int depth, int x_index, int y_index, int z_index)
+{
+    return (
+        (1 << 3 * depth) |
+        _pdep_u32(x_index, 0b100100100100100100100100100100) |
+        _pdep_u32(y_index, 0b010010010010010010010010010010) |
+        _pdep_u32(z_index, 0b001001001001001001001001001001)
+    );
+};
+
+class Timer
+{
+public:
+
+    Timer(const char* name) : 
+        _name(name),
+        _start_time(std::chrono::high_resolution_clock::now())
+    {}
+
+    ~Timer()
+    {
+        const auto duration = (std::chrono::high_resolution_clock::now() - _start_time).count();
+        std::cout << _name << " took " << duration << " ns" << std::endl;
+    }
+
+private:
+    
+    const char* _name;
+    const std::chrono::time_point<std::chrono::high_resolution_clock> _start_time;
+};
+
+/////////////////////////////////////////////////////
 
 TEST_CASE("Empty octree")
 {
@@ -165,30 +200,53 @@ TEST_CASE("Basic set unwinding")
 
 TEST_CASE("Sphere test")
 {
-    const int depth = 4;
-    const int res = 1 << depth;
+    constexpr int depth = 8;
+    constexpr int res = 1 << depth;
 
     // Make a res^3 octree representing a sphere
     Octree octree(false);
+    octree.reserve(1 << (3 * depth));
+    //octree.reserve(100000);
 
     std::vector<float> centers;
     for (int i = 0; i < res; ++i)
     {
         centers.push_back((float)i / res + 0.5f/res - 0.5f);
-        std::cout << i << ": " << centers.back() << std::endl;
+        //std::cout << i << ": " << centers.back() << std::endl;
     }
 
-    for (int x_index = 0; x_index < res; ++x_index)
     {
-        for (int y_index = 0; y_index < res; ++y_index)
-        {
-            for (int z_index = 0; z_index < res; ++z_index)
-            {
-                if (centers[x_index]*centers[x_index] + centers[y_index]*centers[y_index] + centers[z_index]*centers[z_index] >= 0.25f)
-                    continue;
+        Timer timer("Building octree");
 
-                
+        for (int x_index = 0; x_index < res; ++x_index)
+        {
+            for (int y_index = 0; y_index < res; ++y_index)
+            {;
+                for (int z_index = 0; z_index < res; ++z_index)
+                {
+                    // if (centers[x_index]*centers[x_index] + centers[y_index]*centers[y_index] + centers[z_index]*centers[z_index] >= 0.25f)
+                    //     continue;
+
+                    if (x_index != res - 1 || y_index != res - 1 || z_index != res - 1)
+
+                        octree.set(make_locator(depth, x_index, y_index, z_index));
+                }
             }
         }
     }
+
+    float volume;
+    {
+        Timer timer("Getting volume");
+        volume = octree.get_volume();
+    }
+    std::cout << "volume = " << volume << std::endl;
+
+    uint32_t num_nodes;
+    {
+        Timer timer("Getting num nodes");
+        num_nodes = octree.get_num_nodes();
+    }
+    std::cout << "Num nodes = " << num_nodes << std::endl;
+    std::cout << octree << std::endl;
 }

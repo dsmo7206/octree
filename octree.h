@@ -15,7 +15,9 @@ class Octree
 {
 public:
 
-    Octree(bool full);
+    Octree(bool full=false, size_t capacity=0);
+
+    void reserve(size_t capacity);
 
     void set_root();
     void clear_root();
