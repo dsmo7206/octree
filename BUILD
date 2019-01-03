@@ -23,6 +23,7 @@ cc_test(
     srcs = ['octree_test.cpp'],
     hdrs = ['catch.hpp'],
     deps = [':octree', ':test_main'],
+    flags = '-r junit',
     compiler_flags = ['-std=c++17', '-O3', '-mbmi2'],
     linker_flags = ['-O3'],
     write_main = False

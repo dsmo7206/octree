@@ -200,7 +200,7 @@ TEST_CASE("Basic set unwinding")
 
 TEST_CASE("Sphere test")
 {
-    constexpr int depth = 8;
+    constexpr int depth = 7;
     constexpr int res = 1 << depth;
 
     // Make a res^3 octree representing a sphere
