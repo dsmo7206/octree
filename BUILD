@@ -1,9 +1,24 @@
 cc_library(
     name = 'octree',
-    srcs = ['octree.cpp'],
-    hdrs = ['octree.h'],
-    compiler_flags = ['-std=c++17', '-O3'],
+    srcs = [],
+    hdrs = ['octree.h', 'octree.inl.h', 'location_code.h', 'location_code.inl.h'],
+    deps = [],
+    compiler_flags = ['-std=c++17', '-O3', '-mbmi2'],
 )
+'''
+cc_library(
+    name = 'hopscotch',
+    srcs = [],
+    hdrs = [
+        'bhopscotch_map.h',
+        'bhopscotch_set.h',
+        'hopscotch_growth_policy.h',
+        'hopscotch_hash.h',
+        'hopscotch_map.h',
+        'hopscotch_set.h',
+    ],
+    compiler_flags = ['-std=c++17', '-O3', '-mbmi2'],
+)'''
 
 cc_library(
     name = 'test_main',

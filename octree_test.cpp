@@ -57,9 +57,9 @@ private:
 
 TEST_CASE("Empty octree")
 {
-    Octree octree(false);
+    Octree32 octree(false);
 
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1, make_node({}, {})},
     };
 
@@ -69,9 +69,9 @@ TEST_CASE("Empty octree")
 
 TEST_CASE("Full octree")
 {
-    Octree octree(true);
+    Octree32 octree(true);
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1, make_node({0, 1, 2, 3, 4, 5, 6, 7}, {})},
     };
 
@@ -81,10 +81,10 @@ TEST_CASE("Full octree")
 
 TEST_CASE("Set root indirectly")
 {
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set_root();
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1, make_node({0, 1, 2, 3, 4, 5, 6, 7}, {})},
     };
 
@@ -94,10 +94,10 @@ TEST_CASE("Set root indirectly")
 
 TEST_CASE("Set root directly")
 {
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set(0b1);
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1, make_node({0, 1, 2, 3, 4, 5, 6, 7}, {})},
     };
 
@@ -107,10 +107,10 @@ TEST_CASE("Set root directly")
 
 TEST_CASE("Set deep node")
 {
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set(0b1000111000111101010111);
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1,                   make_node( {}, {0})},
         {0b1000,                make_node( {}, {7})},
         {0b1000111,             make_node( {}, {0})},
@@ -125,11 +125,11 @@ TEST_CASE("Set deep node")
 
 TEST_CASE("Set shallow node then deep node")
 {
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set(0b1000111);
     octree.set(0b1000111000111101010111);
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1,    make_node( {}, {0})},
         {0b1000, make_node({7},  {})},
     };
@@ -139,11 +139,11 @@ TEST_CASE("Set shallow node then deep node")
 
 TEST_CASE("Set deep node then shallow node")
 {
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set(0b1000111000111101010111);
     octree.set(0b1000111);
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1,    make_node( {}, {0})},
         {0b1000, make_node({7},  {})},
     };
@@ -153,11 +153,11 @@ TEST_CASE("Set deep node then shallow node")
 
 TEST_CASE("Set two deep nodes")
 {
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set(0b1000111000111101010111);
     octree.set(0b1000111111111101010111);
     
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1,                   make_node( {},    {0})},
         {0b1000,                make_node( {},    {7})},
         {0b1000111,             make_node( {}, {0, 7})},
@@ -181,7 +181,7 @@ TEST_CASE("Basic set unwinding")
     // Set all the 8 children of a given (fairly shallow) node.
     // The parent node should itself be destroyed, and its parent
     // should have it marked as set.
-    Octree octree(false);
+    Octree32 octree(false);
     octree.set(0b1000000);
     octree.set(0b1000001);
     octree.set(0b1000010);
@@ -191,7 +191,7 @@ TEST_CASE("Basic set unwinding")
     octree.set(0b1000110);
     octree.set(0b1000111);
 
-    const NodeMapType expected = {
+    const Octree32::NodeMapType expected = {
         {0b1, make_node({0}, {})},
     };
     
@@ -204,7 +204,7 @@ TEST_CASE("Sphere test")
     constexpr int res = 1 << depth;
 
     // Make a res^3 octree representing a sphere
-    Octree octree(false);
+    Octree32 octree(false);
     octree.reserve(1 << (3 * depth));
     //octree.reserve(100000);
 
@@ -248,5 +248,31 @@ TEST_CASE("Sphere test")
         num_nodes = octree.get_num_nodes();
     }
     std::cout << "Num nodes = " << num_nodes << std::endl;
-    std::cout << octree << std::endl;
+    //std::cout << octree.get_node_map() << std::endl;
+}
+
+TEST_CASE("Bit hacks")
+{
+    using LC = LocationCodesBase<uint32_t>;
+
+    REQUIRE(LC::high_bit(0b1) == 0b1);
+    REQUIRE(LC::high_bit(0b1000) == 0b1000);
+    REQUIRE(LC::high_bit(0b1001101110001) == 0b1000000000000);
+
+    REQUIRE(LC::location_bits(0b1) == 0b0);
+    REQUIRE(LC::location_bits(0b1000) == 0b000);
+    REQUIRE(LC::location_bits(0b1001101110001) == 0b001101110001);
+
+    REQUIRE(LC::lower_corner(0b1) == Vertex(0, 0, 0));
+    REQUIRE(LC::lower_corner(0b1000000000) == Vertex(0, 0, 0));
+
+    REQUIRE(LC::lower_corner(0b1111) == Vertex(256, 256, 256));
+    REQUIRE(LC::lower_corner(0b1111000) == Vertex(256, 256, 256));
+    REQUIRE(LC::lower_corner(0b1111010) == Vertex(256, 256+128, 256));
+
+    REQUIRE(
+        LC::lower_corner(0b1001101110001) == Vertex(
+            512*(13.0f/16.0f), 512*(2.0f/16.0f), 512*(6.0f/16.0f)
+        )
+    );
 }
